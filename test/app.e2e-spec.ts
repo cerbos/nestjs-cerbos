@@ -15,10 +15,30 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  describe('/ (GET)', () => {
+    it('Succesfully return content', () => {
+      return request(app.getHttpServer())
+        .get('/')
+        .expect(200)
+        .expect('Hello World!');
+    });
+  });
+
+  describe('/document/1 - Admin', () => {
+    it('Return 403 (forbitten), when accessed with incorrect header', () => {
+      return request(app.getHttpServer()).get('/document/1').expect(403);
+    });
+    it('Return 403 (forbitten), when accessed with role of "user".', () => {
+      return request(app.getHttpServer())
+        .get('/document/1')
+        .set('authorization', 'user')
+        .expect(403);
+    });
+    it('Return 200 (success), when accessed with role of "admin".', () => {
+      return request(app.getHttpServer())
+        .get('/document/1')
+        .set('authorization', 'admin')
+        .expect(200);
+    });
   });
 });
