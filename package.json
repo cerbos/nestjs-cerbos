@@ -19,12 +19,12 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "cerbos:start": "docker run --rm --name cerbos -d -v $(pwd)/cerbos:/policies -p 3592:3592 -p 3593:3593 ghcr.io/cerbos/cerbos:0.19.0",
+    "cerbos:start": "docker run --rm --name cerbos -d -v $(pwd)/cerbos:/policies -p 3592:3592 -p 3593:3593 ghcr.io/cerbos/cerbos:0.38.1",
     "start:devcerbos": "npm run cerbos:start && npm run start:dev"
   },
   "dependencies": {
-    "@cerbos/core": "^0.18.0",
-    "@cerbos/grpc": "^0.18.0",
+    "@cerbos/core": "^0.18.1",
+    "@cerbos/grpc": "^0.18.1",
     "@nestjs/common": "^10.1.2",
     "@nestjs/core": "^10.1.2",
     "@nestjs/platform-express": "^10.1.2",
