@@ -23,7 +23,7 @@
     "start:devcerbos": "npm run cerbos:start && npm run start:dev"
   },
   "dependencies": {
-    "@cerbos/core": "^0.20.0",
+    "@cerbos/core": "^0.21.0",
     "@cerbos/grpc": "^0.20.0",
     "@nestjs/common": "^10.1.2",
     "@nestjs/core": "^10.1.2",
