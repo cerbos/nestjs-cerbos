@@ -55,14 +55,14 @@ This demo project demonstrates how to use Cerbos in NestJS as an interceptor to 
 
 Cerbos works with any identity provider services like Auth0, Okta, FusionAuth, Clerk, Magic, WorkOS or even your own, bespoke directory system.
 
-Our [NestJs.js](https://nestjs.org/) application will provide an API that uses Cerbos for authorization, to decide what actions are available on which resources for a given user.
+Our [NestJs.js](https://nestjs.com/) application will provide an API that uses Cerbos for authorization, to decide what actions are available on which resources for a given user.
 
 The policies is defined in the `cerbos/policies` directory. Each policy is authored in the a very human-readable format which you can learn more about at the [Cerbos Policy documentation site](https://docs.cerbos.dev/cerbos/latest/policies), and for the demo revolves around access to a `contacts` resource.
 
 ### Tech Stack
 
 - [Cerbos](https://cerbos.dev)
-- [NestJs](https://nestjs.org/) - A progressive Node.js framework for building efficient, reliable and scalable server-side applications.
+- [NestJs](https://nestjs.com/) - A progressive Node.js framework for building efficient, reliable and scalable server-side applications.
 - [RxJs](https://https://rxjs.dev/) - Reactive Extensions Library for JavaScript
 ## How to Run the Example
 
