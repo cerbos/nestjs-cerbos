@@ -38,7 +38,6 @@ export class CerbosInterceptor implements NestInterceptor {
         };
 
         // checking Cerbos for the result and wait for it!
-        console.log('Cerbos Request:', JSON.stringify(cerbosRequest, null, 2));
         const cerbosResult = await cerbos.isAllowed(cerbosRequest);
 
         // If cerbos says no, return an exception
