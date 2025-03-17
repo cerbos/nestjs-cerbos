@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@cerbos/core": "^0.21.0",
-    "@cerbos/grpc": "^0.20.1",
+    "@cerbos/grpc": "^0.21.0",
     "@nestjs/common": "^11.0.10",
     "@nestjs/core": "^11.0.10",
     "@nestjs/platform-express": "^11.0.10",
