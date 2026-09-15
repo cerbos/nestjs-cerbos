@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run format:check
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - run: npm test
+
+      - name: Start Cerbos
+        run: |
+          docker run --rm --name cerbos -d \
+            -v "$PWD/cerbos:/policies" \
+            -p 3592:3592 -p 3593:3593 \
+            ghcr.io/cerbos/cerbos:0.55.0
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3592/_cerbos/health >/dev/null; then
+              echo "Cerbos is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Cerbos did not become healthy in time" >&2
+          docker logs cerbos
+          exit 1
+
+      - run: npm run test:e2e
+
+      - name: Stop Cerbos
+        if: always()
+        run: docker stop cerbos || true
