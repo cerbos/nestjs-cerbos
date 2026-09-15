@@ -1,51 +1,64 @@
+import { GRPC } from '@cerbos/grpc';
 import {
+  CallHandler,
+  ExecutionContext,
+  ForbiddenException,
   Injectable,
   NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  ForbiddenException,
-  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { GRPC as Cerbos } from '@cerbos/grpc';
-const cerbos = new Cerbos('127.0.0.1:3593', { tls: false });
+import type { Request } from 'express';
+import { from, Observable, switchMap } from 'rxjs';
+import type { Document } from '../db';
 
+type Principal = { id: string; roles: string[] };
+
+/**
+ * Asks Cerbos whether the current principal may `view` the document returned
+ * by the controller. Because this runs *after* the handler, the full document
+ * (including its attributes) is available for the policy to evaluate.
+ */
 @Injectable()
-export class CerbosInterceptor implements NestInterceptor {
-  intercept(host: ExecutionContext, next: CallHandler): Observable<any> {
-    // This code is initated before the controller code is called
-    const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
-    // const resource = request.url.match(/[^/]+/g);
-    const role = request.headers['authorization'] || 'anonymous';
+export class CerbosInterceptor implements NestInterceptor<
+  Document | undefined,
+  Document
+> {
+  constructor(private readonly cerbos: GRPC) {}
 
-    return next.handle().pipe(
-      map(async (document) => {
-        // If the document doesn't exist, throw an exception
-        if (!document) return new BadRequestException('Invalid document id');
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler<Document | undefined>,
+  ): Observable<Document> {
+    const request = context.switchToHttp().getRequest<Request>();
 
-        // this code, which is async, is called after the controller code is called
-        // Therefore, the data variable will contain what the controller is returning
-        const cerbosRequest = {
-          principal: { id: role, roles: [role] },
-          action: 'view',
-          resource: {
-            kind: 'document',
-            id: document.id,
-            attributes: document,
-          },
-        };
+    // Demo only: the role is read straight from the `authorization` header.
+    // In a real application derive the principal from a proper auth guard (e.g. JWT).
+    const role = request.header('authorization') ?? 'anonymous';
+    const principal: Principal = { id: role, roles: [role] };
 
-        // checking Cerbos for the result and wait for it!
-        const cerbosResult = await cerbos.isAllowed(cerbosRequest);
+    return next
+      .handle()
+      .pipe(switchMap((document) => from(this.authorize(principal, document))));
+  }
 
-        // If cerbos says no, return an exception
-        if (cerbosResult === false) throw new ForbiddenException();
+  private async authorize(
+    principal: Principal,
+    document: Document | undefined,
+  ): Promise<Document> {
+    if (!document) throw new NotFoundException('Document not found');
 
-        // Cerbos says yes, so return the data
-        return document;
-      }),
-    );
+    const allowed = await this.cerbos.isAllowed({
+      principal,
+      action: 'view',
+      resource: {
+        kind: 'document',
+        id: document.id,
+        attributes: document,
+      },
+    });
+
+    if (!allowed) throw new ForbiddenException();
+
+    return document;
   }
 }

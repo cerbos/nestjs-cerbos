@@ -1,124 +1,120 @@
 # Cerbos NestJS Demo
 
-This demo project demonstrates how to use Cerbos in NestJS as an interceptor to validate requests based on policies defined in Cerbos.
+This demo shows how to use [Cerbos](https://cerbos.dev) from a [NestJS](https://nestjs.com/) application. A NestJS interceptor asks the Cerbos policy decision point (PDP) whether the current principal may `view` the document a controller is about to return, and rejects the request when the policy says no.
 
-## Run the project
+## Table of contents
 
-To run the project, check `package.json` for prebuilt run configurations, by default `NestJS` offers `npm run start:dev` for development purposes. On top of that there also are Cerbos policies included in the repository, and to use this you can run the `npm run cerbos:start`. Both are combined into the single `npm run start:devcerbos`.
-
-## Demo Request
-
-The demo includes an `Document` request, you can do a `GET` on `http://localhost:3000/document/1`.
-
-Provide the `authorization` header with either `user` or `admin` as a value for getting a successful response, or anything else to get a rejected response. The success state depends on the `author` of the `documents/*`.
-
-There are 3 documents defined in the `src/db.ts` file,
-
-- the `document/1` can only be accessed by the `admin` user
-- the `document/2` can be accessed by `user` or `admin`
-- the `document/3` is for `not-the-current-user` but can be accessed by `admin`.
-
-The Cerbos policy is validated in `src/document/document.cerbos.interceptor.ts` file.
-
-The response is of course currently hardcoded in the `/src/document/document.controller.ts` file, as this is for demonstration purposes.
-
-> Note! You should NOT use authentication as demonstrated, we recommend using a JWT Guard in NestJS
-
-
-
-
-
-
-# NestJs example
-
-This demo project demonstrates how to use Cerbos in NestJS as an interceptor to validate requests based on policies defined in Cerbos.
-
-## Table of Contents
-
-- [NestJs example](#nestjs-example)
-
-  - [Overview](#overview)
-    - [Tech Stack](#tech-stack)
-  - [How to Run the Example](#how-to-run-the-example)
-
-    - [1. Clone the repository and install the dependencies](#1-clone-the-repository-and-install-the-dependencies)
-    - [2. Run the project](#2-run-the-project)
-    - [3. Check out the example implementation](#3-check-out-the-example-implementation)
-    - [4. Make changes to your Cerbos Policies](#3-make-changes-to-your-cerbos-policies)
-
-  - [Commands](#commands)
-  - [Learn More](#learn-more)
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Run the example](#run-the-example)
+- [Try it out](#try-it-out)
+- [How it works](#how-it-works)
+- [Change the policies](#change-the-policies)
+- [Commands](#commands)
+- [Learn more](#learn-more)
 
 ## Overview
 
-**[Cerbos](https://cerbos.dev)** is an open-source authorization-as-a-service option for allowing decoupled access control in your software. It allows writing human-readable policy definitions that serve as context-aware access control policies for your application resources.
+**[Cerbos](https://cerbos.dev)** is an open-source authorization layer for decoupled access control. Policies are written in a human-readable YAML format and evaluated by the Cerbos PDP, so your application code only has to ask "can this principal do this action on this resource?".
 
-Cerbos works with any identity provider services like Auth0, Okta, FusionAuth, Clerk, Magic, WorkOS or even your own, bespoke directory system.
+Cerbos works with any identity provider (Auth0, Okta, FusionAuth, Clerk, WorkOS, or your own directory), because it only needs the principal's ID, roles and attributes.
 
-Our [NestJs.js](https://nestjs.com/) application will provide an API that uses Cerbos for authorization, to decide what actions are available on which resources for a given user.
+The policy for this demo lives in `cerbos/policies/documents.yaml` and governs access to a `document` resource:
 
-The policies is defined in the `cerbos/policies` directory. Each policy is authored in the a very human-readable format which you can learn more about at the [Cerbos Policy documentation site](https://docs.cerbos.dev/cerbos/latest/policies), and for the demo revolves around access to a `contacts` resource.
+- anyone with the `admin` role can view any document
+- anyone with the `user` role can view documents they authored
 
-### Tech Stack
+### Tech stack
 
-- [Cerbos](https://cerbos.dev)
-- [NestJs](https://nestjs.com/) - A progressive Node.js framework for building efficient, reliable and scalable server-side applications.
-- [RxJs](https://https://rxjs.dev/) - Reactive Extensions Library for JavaScript
-## How to Run the Example
+- [Cerbos](https://cerbos.dev) via the [`@cerbos/grpc`](https://www.npmjs.com/package/@cerbos/grpc) client
+- [NestJS](https://nestjs.com/) 12
+- [RxJS](https://rxjs.dev/)
 
-### 1. Clone the repository and install the dependencies
+## Requirements
+
+- Node.js 22.12 or newer (see `.nvmrc`)
+- Docker, to run the Cerbos PDP locally
+
+## Run the example
 
 ```bash
 git clone https://github.com/cerbos/nestjs-cerbos.git
+cd nestjs-cerbos
+npm install
 ```
 
-Then `cd` into the project directory and run `npm install` to install the dependencies.
+Start the Cerbos PDP with the policies from this repository, then start the NestJS app in watch mode:
 
-```sh
-npm install 
+```bash
+npm run start:devcerbos
 ```
 
-_Alternatviely you could use `yarn` or `pnpm` or anything that runs `npm scripts`_
+This is equivalent to running `npm run cerbos:start` followed by `npm run start:dev`. The API listens on <http://localhost:3000> and talks to Cerbos on `127.0.0.1:3593`.
 
-## 2. Run the project
+The app reads two optional environment variables:
 
-To run the project, check `package.json` for prebuilt run configurations, by default `NestJS` offers `npm run start:dev` for development purposes. On top of that there also are Cerbos policies included in the repository, and to use this you can run the `npm run cerbos:start`. Both are combined into the single `npm run start:devcerbos`.
+| Variable         | Default          | Description                                   |
+| ---------------- | ---------------- | --------------------------------------------- |
+| `CERBOS_ADDRESS` | `127.0.0.1:3593` | Host and port of the Cerbos PDP gRPC endpoint |
+| `CERBOS_TLS`     | `false`          | Set to `true` when the PDP is served over TLS |
+| `PORT`           | `3000`           | Port the NestJS application listens on        |
 
-### 3. Check out the example implementation
+## Try it out
 
-The demo includes an `Document` request, you can do a `GET` on `http://localhost:3000/document/1`.
+Send a `GET` request to `http://localhost:3000/document/:id` with an `authorization` header of either `user` or `admin`. Any other value (or no header) is treated as an anonymous principal.
 
-Provide the `authorization` header with either `user` or `admin` as a value for getting a successful response, or anything else to get a rejected response. The success state depends on the `author` of the `documents/*`.
+```bash
+curl -i -H 'authorization: admin' http://localhost:3000/document/1
+curl -i -H 'authorization: user'  http://localhost:3000/document/2
+curl -i -H 'authorization: user'  http://localhost:3000/document/1   # 403
+```
 
-There are 3 documents defined in the `src/db.ts` file,
+Three documents are defined in `src/db.ts`:
 
-- the `document/1` can only be accessed by the `admin` user
-- the `document/2` can be accessed by `user` or `admin`
-- the `document/3` is for `not-the-current-user` but can be accessed by `admin`.
+| Document      | Author                 | `admin` | `user` |
+| ------------- | ---------------------- | ------- | ------ |
+| `/document/1` | `admin`                | 200     | 403    |
+| `/document/2` | `user`                 | 200     | 200    |
+| `/document/3` | `not-the-current-user` | 200     | 403    |
 
-The Cerbos policy is validated in `src/document/document.cerbos.interceptor.ts` file.
+Requesting a document that does not exist returns `404`.
 
-The response is of course currently hardcoded in the `/src/document/document.controller.ts` file, as this is for demonstration purposes.
+> **Note:** the `authorization` header is used as-is to build the principal purely to keep the demo small. Do not do this in a real application; derive the principal from a proper authentication guard (for example a JWT guard).
 
-> Note! You should NOT use authentication as demonstrated, we recommend using a JWT Guard in NestJS
+## How it works
 
-## 4. Make changes to your Cerbos Policies
+- `src/cerbos/cerbos.module.ts` creates a single `@cerbos/grpc` client and makes it injectable.
+- `src/document/document.cerbos.interceptor.ts` runs after the controller. It builds a principal from the request, calls `cerbos.isAllowed(...)` with the document as the resource, and throws `ForbiddenException` when access is denied.
+- `src/document/document.controller.ts` applies the interceptor with `@UseInterceptors(CerbosInterceptor)` and returns the document from the fake database in `src/db.ts`.
 
-Your showcase is now running a local version of Cerbos, and you can easily make changes to the Policies and learn more about Cerbos and all its features. 
+## Change the policies
 
-You can use the existing set of E2E tests to test different policies and changes to existing requirements by running `npm run test:e2e`.
+The Cerbos container mounts `./cerbos` and watches for changes, so you can edit `cerbos/policies/documents.yaml` while the demo is running. The end-to-end tests in `test/` exercise every combination in the table above and are a convenient way to check a policy change:
+
+```bash
+npm run cerbos:start
+npm run test:e2e
+npm run cerbos:stop
+```
 
 ## Commands
 
-- `npm run cerbos:start` - Starts the docker instance of cerbos server.
-- `npm run start` - Start the nestJs application in development mode.
-- `npm run start:devcerbos` - Starts both docker and the nestjs application
+| Command                   | Description                                                   |
+| ------------------------- | ------------------------------------------------------------- |
+| `npm run cerbos:start`    | Start the Cerbos PDP in Docker with the policies in `cerbos/` |
+| `npm run cerbos:stop`     | Stop the Cerbos container                                     |
+| `npm run start:dev`       | Start the NestJS application in watch mode                    |
+| `npm run start:devcerbos` | Start Cerbos and the application together                     |
+| `npm run build`           | Compile to `dist/`                                            |
+| `npm run start:prod`      | Run the compiled application                                  |
+| `npm test`                | Run the unit tests (no Cerbos needed)                         |
+| `npm run test:e2e`        | Run the end-to-end tests against a running Cerbos PDP         |
+| `npm run lint`            | Lint with oxlint                                              |
+| `npm run format`          | Format with Prettier                                          |
 
-## Learn More
+## Learn more
 
-To learn more about Clerk.dev and NestJs, take a look at the following resources:
-
-- [Cerbos Website](https://cerbos.dev)
-- [Cerbos Documentation](https://docs.cerbos.dev)
-- [Nest.js Documentation](https://docs.nestjs.com/) - learn about NestJs features.
-
+- [Cerbos website](https://cerbos.dev)
+- [Cerbos documentation](https://docs.cerbos.dev)
+- [Cerbos policy reference](https://docs.cerbos.dev/cerbos/latest/policies)
+- [NestJS documentation](https://docs.nestjs.com/)
